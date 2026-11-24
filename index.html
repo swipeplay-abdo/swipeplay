@@ -166,7 +166,7 @@ async function refresh(){const s=ST.sess;if(!s)return;if(s.expires_at*1000>Date.
 async function api(path,o={}){const h={apikey:KEY,'content-type':'application/json'};if(o.auth!==false&&ST.sess){await refresh();h.authorization='Bearer '+ST.sess.access_token}
  Object.assign(h,o.headers||{});const r=await fetch(SB+path,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined});let j=null;const t=await r.text();try{j=t?JSON.parse(t):null}catch{}
  if(!r.ok)throw Object.assign(new Error((j&&(j.error_description||j.msg||j.message||j.error))||('Error '+r.status)),{status:r.status});return j}
-async function signUp(email,pw,name){const j=await api('/auth/v1/signup',{method:'POST',body:{email,password:pw},auth:false});ST.pendingName=name;persist();return j}
+async function signUp(email,pw,name){const j=await api('/auth/v1/signup?redirect_to='+encodeURIComponent('https://swipeplay-abdo.github.io/swipeplay/'),{method:'POST',body:{email,password:pw},auth:false});ST.pendingName=name;persist();return j}
 async function signIn(email,pw){const j=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password:pw},auth:false});
  ST.sess={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at,uid:j.user.id,email:j.user.email};persist();await loadProfile()}
 async function loadProfile(){if(!ST.sess){prof=null;return}const r=await api('/rest/v1/profiles?id=eq.'+ST.sess.uid+'&select=username,accepted_terms_at,banned');prof=r&&r[0]||null;

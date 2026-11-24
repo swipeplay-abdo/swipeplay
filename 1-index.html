@@ -1,0 +1,230 @@
+<!doctype html><html><head>
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src https://vwrskuvebjqzljzjtbhp.supabase.co; frame-src about: data: blob:; worker-src 'self'; manifest-src 'self'; form-action 'none'; base-uri 'none'">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#000;color:#fff;overflow:hidden;font-family:-apple-system,system-ui,Roboto,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+#top{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:600;font-size:17px;flex:none}
+#top svg{width:24px;height:24px}
+#card{position:relative;flex:1;margin:0 6px;border-radius:14px;overflow:hidden;background:#111;min-height:0}
+#feed{position:absolute;inset:0;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+canvas{position:absolute;left:0;width:100%;height:100%}
+#bar{flex:none;display:flex;align-items:center;gap:18px;padding:10px 14px 4px;font-size:12px;color:#ddd}
+#bar .it{display:flex;align-items:center;gap:5px}
+#bar svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:1.8}
+#bar .sp{flex:1}#bar .on svg{fill:#ff3b5c;stroke:#ff3b5c}
+#who{flex:none;display:flex;gap:10px;align-items:center;padding:4px 14px 8px;min-height:42px}
+#av{width:30px;height:30px;border-radius:50%;flex:none}
+#who b{font-size:13px;display:block}#who span{font-size:12px;color:#bbb}
+#nav{flex:none;display:flex;align-items:center;gap:10px;padding:2px 12px calc(10px + env(safe-area-inset-bottom))}
+#pill{flex:1;height:48px;border-radius:24px;background:#1c1c1e;display:flex;justify-content:space-around;align-items:center}
+#pill svg{width:24px;height:24px;fill:none;stroke:#888;stroke-width:1.8}#pill .a svg{stroke:#fff}
+#plus{width:48px;height:48px;border-radius:50%;background:#fff;color:#000;font-size:28px;display:flex;align-items:center;justify-content:center;font-weight:300}
+#dots{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:5px;pointer-events:none;z-index:3}
+#dots i{width:4px;height:4px;border-radius:2px;background:#fff5}#dots i.a{background:#fff;height:14px}
+#hud{position:absolute;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;font-weight:700;font-size:14px;text-shadow:0 1px 4px #000a;pointer-events:none;z-index:3}
+#hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:12px;opacity:.8;pointer-events:none;z-index:3;transition:opacity .6s}
+#toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:#333e;padding:8px 14px;border-radius:16px;font-size:13px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20}
+.panel{position:fixed;left:0;right:0;top:0;bottom:calc(66px + env(safe-area-inset-bottom));background:#000;z-index:10;display:none;flex-direction:column;padding:calc(env(safe-area-inset-top) + 12px) 16px 16px;overflow:auto;touch-action:pan-y}
+.panel h2{margin:6px 0 14px;font-size:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{border-radius:12px;height:120px;display:flex;align-items:flex-end;padding:10px;font-weight:700}
+.empty{color:#888;font-size:14px}
+.field{width:100%;padding:12px;border-radius:10px;border:0;background:#1c1c1e;color:#fff;font-size:16px;margin:8px 0}
+.btn{background:#fff;color:#000;border:0;border-radius:22px;padding:12px 22px;font-weight:700;font-size:15px;margin-top:6px}
+.sub{color:#999;font-size:13px}
+</style></head><body>
+<div id="app">
+ <div id="top"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>SwipePlay</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg></div>
+ <div id="card"><div id="feed"></div><div id="hud"><span id="title"></span><span id="score"></span></div><div id="rbox" style="display:none;position:absolute;inset:0;z-index:2;background:#000"></div><div id="strip" style="position:absolute;right:0;top:0;bottom:0;width:34px;z-index:4"></div><div id="dots"></div><div id="hint">Swipe up for the next game</div></div>
+ <div id="bar">
+  <div class="it" id="b-like"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z"/></svg><span id="n-like">0</span></div>
+  <div class="it" id="b-com"><span style="font-size:20px;line-height:20px">⋯</span><span id="n-com">report</span></div>
+  <div class="it" id="b-rem" style="display:none"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 4v5h-5M20 12a8 8 0 0 1-14 5l-2-2M4 20v-5h5"/></svg><span id="n-rem">0</span></div>
+  <div class="it" id="b-sh" style="display:none"><svg viewBox="0 0 24 24"><path d="M21 3L3 11l7 3 3 7z"/></svg></div>
+  <span class="sp"></span>
+  <div class="it" id="b-save"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+ </div>
+ <div id="who"><div id="av"></div><div><b id="h"></b><span id="cap"></span></div></div>
+ <div id="nav"><div id="pill">
+  <div class="a" data-t="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></div>
+  <div data-t="disc"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M15 9l-2 6-4 0 2-6z"/></svg></div>
+  <div data-t="liked"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z"/></svg></div>
+  <div data-t="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+ </div><div id="plus">+</div></div>
+</div>
+<div id="toast"></div>
+<div class="panel" id="p-disc"><h2>Discover</h2><div class="grid" id="g-disc"></div></div>
+<div class="panel" id="p-liked"><h2>Liked and saved</h2><div class="grid" id="g-liked"></div><div class="empty" id="e-liked">Like or save a game and it shows up here.</div></div>
+<div class="panel" id="p-create"><h2>Create a game</h2><div class="sub" id="cr-note"></div><textarea class="field" id="cr-p" rows="4" maxlength="500" placeholder="Describe your game..."></textarea><button class="btn" id="cr-go">Generate</button><div id="cr-box" style="margin-top:12px;height:360px;display:none;border-radius:12px;overflow:hidden"></div></div>
+<div class="panel" id="p-me"><h2 id="me-h">Profile</h2><div id="me-body"></div></div>
+<script>
+let W_=300,H_=500;const W=()=>W_,H=()=>H_;
+const ST=JSON.parse(localStorage.getItem('sp')||'{}');ST.best=ST.best||{};ST.like=ST.like||{};ST.save=ST.save||{};ST.user=ST.user||null;
+const persist=()=>localStorage.setItem('sp',JSON.stringify(ST));
+let best=ST.best;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function G(name,color,o){return Object.assign({name,color,score:0,over:false,t:0},o)}
+const games=[
+G('Flap','#4cc9f0',{init(){this.y=H()/2;this.v=0;this.p=[];this.n=0;this.score=0;this.over=false;this.x0=0},
+ tap(){if(this.over)return this.init();this.v=-H()*.00065},
+ update(d){if(this.over)return;this.v+=H()*.0000022*d;this.y+=this.v*d;this.n-=d;
+  if(this.n<=0){this.n=1500;this.p.push({x:W()+40,g:rnd(H()*.2,H()*.7),s:0})}
+  const gap=H()*.24;for(const p of this.p){p.x-=W()*.0004*d*1.2;if(!p.s&&p.x<W()*.25-30){p.s=1;this.score++}
+   if(W()*.25>p.x-30&&W()*.25<p.x+30&&(this.y<p.g||this.y>p.g+gap))this.over=1}
+  this.p=this.p.filter(p=>p.x>-60);if(this.y<0||this.y>H())this.over=1},
+ draw(c){c.fillStyle='#4cc9f0';const gap=H()*.24;c.fillStyle='#2ecc71';for(const p of this.p){c.fillRect(p.x-30,0,60,p.g);c.fillRect(p.x-30,p.g+gap,60,H())}
+  c.fillStyle='#ffd166';c.beginPath();c.arc(W()*.25,this.y,16,0,7);c.fill()}}),
+G('Tap Pop','#f72585',{init(){this.t=[];this.n=0;this.score=0;this.lives=3;this.over=false},
+ tap(x,y){if(this.over)return this.init();for(const o of this.t)if(!o.d&&Math.hypot(o.x-x,o.y-y)<o.r+10){o.d=1;this.score++;return}},
+ update(d){if(this.over)return;this.n-=d;if(this.n<=0){this.n=Math.max(350,900-this.score*15);this.t.push({x:rnd(50,W()-50),y:rnd(120,H()-100),r:46,age:0})}
+  for(const o of this.t){if(o.d)continue;o.age+=d;o.r=46*(1-o.age/(1800-Math.min(900,this.score*20)));if(o.r<4){o.d=1;this.lives--;if(this.lives<=0)this.over=1}}
+  this.t=this.t.filter(o=>!o.d)},
+ draw(c){for(const o of this.t){c.fillStyle='#fff';c.beginPath();c.arc(o.x,o.y,Math.max(o.r,0),0,7);c.fill()}
+  c.fillStyle='#fff';c.font='700 18px sans-serif';c.fillText('♥'.repeat(this.lives),18,H()-60)}}),
+G('Stack','#7209b7',{init(){this.b=[{x:W()/2-80,w:160}];this.x=0;this.w=160;this.dir=1;this.score=0;this.over=false;this.sp=.25},
+ tap(){if(this.over)return this.init();const L=this.b[this.b.length-1];const l=Math.max(this.x,L.x),r=Math.min(this.x+this.w,L.x+L.w);
+  if(r-l<=2){this.over=1;return}this.b.push({x:l,w:r-l});this.w=r-l;this.score++;this.sp+=.012},
+ update(d){if(this.over)return;this.x+=this.dir*this.sp*d;if(this.x<0){this.x=0;this.dir=1}if(this.x+this.w>W()){this.x=W()-this.w;this.dir=-1}},
+ draw(c){const h=28,base=H()-80,off=Math.max(0,(this.b.length-8)*h);this.b.forEach((b,i)=>{c.fillStyle=`hsl(${i*25},80%,60%)`;c.fillRect(b.x,base-i*h+off,b.w,h-2)});
+  if(!this.over){c.fillStyle='#fff';c.fillRect(this.x,base-this.b.length*h+off,this.w,h-2)}}}),
+G('Hop','#f8961e',{init(){this.y=0;this.v=0;this.o=[];this.n=0;this.score=0;this.over=false;this.s=0},
+ tap(){if(this.over)return this.init();if(this.y===0)this.v=.9},
+ update(d){if(this.over)return;this.v-=.0026*d;this.y=Math.max(0,this.y+this.v*d);if(this.y===0)this.v=0;this.s+=d;this.n-=d;
+  if(this.n<=0){this.n=rnd(900,1700);this.o.push({x:W()+20,h:rnd(36,60)})}
+  const sp=.35+this.s/60000;for(const o of this.o){o.x-=sp*d;if(!o.p&&o.x<W()*.2-20){o.p=1;this.score++}
+   if(Math.abs(o.x-W()*.2)<24&&this.y<o.h-6)this.over=1}this.o=this.o.filter(o=>o.x>-40)},
+ draw(c){const gy=H()*.7;c.fillStyle='#fff3';c.fillRect(0,gy,W(),4);c.fillStyle='#fff';c.fillRect(W()*.2-18,gy-36-this.y,36,36);
+  c.fillStyle='#ef476f';for(const o of this.o)c.fillRect(o.x-14,gy-o.h,28,o.h)}}),
+G('Zone','#06d6a0',{init(){this.a=0;this.z=rnd(0,6.28);this.zw=.7;this.score=0;this.over=false;this.sp=.0035},
+ tap(){if(this.over)return this.init();let d=Math.abs(((this.a-this.z+Math.PI*3)%(Math.PI*2))-Math.PI);d=Math.PI-d;
+  const df=Math.abs(((this.a-this.z)%(Math.PI*2)+Math.PI*3)%(Math.PI*2)-Math.PI);
+  if(Math.PI-df<this.zw/2+.05&&true){}
+  let e=((this.a-this.z)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);if(e>Math.PI)e-=Math.PI*2;
+  if(Math.abs(e)<this.zw/2){this.score++;this.z=rnd(0,6.28);this.sp=Math.min(.009,this.sp*1.07)*(Math.random()<.5?-1:1);this.zw=Math.max(.3,this.zw-.02)}else this.over=1},
+ update(d){if(!this.over)this.a+=this.sp*d},
+ draw(c){const cx=W()/2,cy=H()/2,r=Math.min(W(),H())*.3;c.lineWidth=18;c.strokeStyle='#fff3';c.beginPath();c.arc(cx,cy,r,0,7);c.stroke();
+  c.strokeStyle='#fff';c.beginPath();c.arc(cx,cy,r,this.z-this.zw/2,this.z+this.zw/2);c.stroke();
+  c.fillStyle=this.over?'#ef476f':'#ffd166';c.beginPath();c.arc(cx+r*Math.cos(this.a),cy+r*Math.sin(this.a),14,0,7);c.fill()}})
+];
+games.forEach(g=>{const i=g.init,t=g.tap;g.init=function(){i.call(this);this.wait=1};g.tap=function(x,y){if(this.wait){this.wait=0;if(this.name==='Flap')t.call(this);return}t.call(this,x,y)}});
+
+const META=[['demo game','Built-in game',0,'#ff6b6b,#feca57'],['demo game','Built-in game',0,'#48dbfb,#5f27cd'],['demo game','Built-in game',0,'#ff9ff3,#54a0ff'],['demo game','Built-in game',0,'#feca57,#ff6b6b'],['demo game','Built-in game',0,'#1dd1a1,#10ac84']];
+const feed=document.getElementById('feed'),$=id=>document.getElementById(id);
+const cv=[],cx=[];let cur=0;
+games.forEach((g,i)=>{const c=document.createElement('canvas');c.style.top=(i*100)+'%';feed.appendChild(c);cv.push(c);cx.push(c.getContext('2d'));const d=document.createElement('i');$('dots').appendChild(d);g.meta=META[i];g.rem=0;g.cm=0});
+function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,1400)}
+function size(){const r=$('card').getBoundingClientRect();W_=r.width;H_=r.height;const dpr=devicePixelRatio||1;cv.forEach((c,i)=>{c.width=W_*dpr;c.height=H_*dpr;cx[i].setTransform(dpr,0,0,dpr,0,0)});games.forEach(g=>g.init())}
+function info(){const r=typeof curRemote==='function'?curRemote():null;if(r){$('h').textContent='@'+((r.profiles&&r.profiles.username)||'player');$('cap').textContent=r.title;let hh=0;for(const ch of r.id)hh=(hh*31+ch.charCodeAt(0))%360;$('av').style.background=`linear-gradient(135deg,hsl(${hh},80%,60%),hsl(${(hh+60)%360},80%,50%))`;
+ const lk=likedIds.has(r.id);$('n-like').textContent=r.like_count;$('n-com').textContent='report';$('n-rem').textContent='';$('b-like').className='it'+(lk?' on':'');$('b-save').className='it'+(ST.save[r.id]?' on':'');return}
+ const g=games[cur],m=g.meta;$('h').textContent=g.name+' \u00b7 built-in';$('cap').textContent=m[1];const cl=m[3].split(',');$('av').style.background=`linear-gradient(135deg,${cl[0]},${cl[1]})`;
+ const lk=!!ST.like[g.name];$('n-like').textContent=lk?1:0;$('n-com').textContent='report';$('b-like').className='it'+(lk?' on':'');$('b-save').className='it'+(ST.save[g.name]?' on':'')}
+function go(i){const n=NB+remote.length;cur=Math.max(0,Math.min(n-1,i));const rem=cur>=NB;$('rbox').style.display=rem?'block':'none';
+ if(rem){showRemote(cur-NB);$('title').textContent=remote[cur-NB].title.slice(0,24);$('score').textContent=''}else{$('rbox').innerHTML='';feed.style.transform=`translateY(${-cur*100}%)`;games[cur].init();games[cur].wait=1;$('title').textContent=games[cur].name}
+ [...$('dots').children].forEach((d,k)=>d.className=k===cur?'a':'');info();setTimeout(()=>$('hint').style.opacity=0,3500)}
+$('b-like').onclick=async()=>{const r=curRemote();if(!r){const n=games[cur].name;ST.like[n]=!ST.like[n];persist();info();return}
+ if(!ready()){toast('Log in to like');return}try{if(likedIds.has(r.id)){await api('/rest/v1/likes?game_id=eq.'+r.id+'&user_id=eq.'+ST.sess.uid,{method:'DELETE'});likedIds.delete(r.id);r.like_count=Math.max(0,r.like_count-1)}else{await api('/rest/v1/likes',{method:'POST',body:{user_id:ST.sess.uid,game_id:r.id},headers:{Prefer:'return=minimal'}});likedIds.add(r.id);r.like_count++}info()}catch(e){toast(e.message)}};
+$('b-save').onclick=()=>{const r=curRemote(),k=r?r.id:games[cur].name;ST.save[k]=!ST.save[k];persist();info();toast(ST.save[k]?'Saved on this device':'Removed')};
+$('b-com').onclick=()=>more();
+$('plus').onclick=()=>show('create');
+function tile(g,i){const d=document.createElement('div');d.className='tile';const c=g.meta[3].split(',');d.style.background=`linear-gradient(135deg,${c[0]},${c[1]})`;d.textContent=g.name;d.onclick=()=>{show('home');go(i)};return d}
+const SAFE_ENGINE=location.protocol==='file:'||(!!(navigator.userAgentData&&navigator.userAgentData.brands.some(b=>/Chromium/.test(b.brand)))&&!/iPhone|iPad|iPod/.test(navigator.userAgent));
+function sandbox(html,box){if(!SAFE_ENGINE){box.innerHTML='<div style="padding:40px;text-align:center;color:#aaa">User-made games can&#39;t be run safely in this browser yet. Use the Android app or Chrome on Android/desktop.</div>';return}const csp='<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\'; style-src \'unsafe-inline\'; img-src data:">';
+ const f=document.createElement('iframe');f.setAttribute('sandbox','allow-scripts');f.style.cssText='width:100%;height:100%;border:0;background:#000';let loads=0;f.onload=()=>{loads++;if(loads>1){box.innerHTML='';const m=document.createElement('div');m.style.cssText='padding:40px;text-align:center;color:#aaa';m.textContent='This game tried to open another page and was stopped.';box.appendChild(m)}};f.srcdoc=csp+html;box.innerHTML='';box.appendChild(f);return f}
+window.sandbox=sandbox;
+function show(t){document.querySelectorAll('.panel').forEach(p=>p.style.display='none');document.querySelectorAll('#pill div').forEach(d=>d.className=d.dataset.t===t?'a':'');
+ if(t==='home')return;$('p-'+t).style.display='flex';
+ if(t==='disc'){$('g-disc').innerHTML='';games.forEach((g,i)=>$('g-disc').appendChild(tile(g,i)));remote.forEach((g,i)=>$('g-disc').appendChild(tileR(g,NB+i)))}
+ if(t==='liked'){$('g-liked').innerHTML='';let n=0;games.forEach((g,i)=>{if(ST.like[g.name]||ST.save[g.name]){n++;$('g-liked').appendChild(tile(g,i))}});remote.forEach((g,i)=>{if(likedIds.has(g.id)||ST.save[g.id]){n++;$('g-liked').appendChild(tileR(g,NB+i))}});$('e-liked').style.display=n?'none':'block'}
+ if(t==='me')renderMe();if(t==='create')create()}
+document.querySelectorAll('#pill div').forEach(d=>d.onclick=()=>show(d.dataset.t));
+let sx,sy,sx0;const cardEl=$('card');
+addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY},{passive:true});
+addEventListener('touchend',e=>{if(document.querySelector('.panel[style*="flex"]'))return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+ if(Math.abs(dy)>50&&Math.abs(dy)>Math.abs(dx)){go(cur+(dy<0?1:-1))}
+ else if(Math.hypot(dx,dy)<20){const r=cardEl.getBoundingClientRect();if(t.clientY>=r.top&&t.clientY<=r.bottom)games[cur]&&games[cur].tap(t.clientX-r.left,t.clientY-r.top)}},{passive:true});
+addEventListener('mousedown',e=>{const r=cardEl.getBoundingClientRect();if(e.clientY>=r.top&&e.clientY<=r.bottom)games[cur]&&games[cur].tap(e.clientX-r.left,e.clientY-r.top)});
+addEventListener('keydown',e=>{if(e.key==='ArrowDown')go(cur+1);if(e.key==='ArrowUp')go(cur-1)});
+addEventListener('resize',size);
+let last=performance.now();
+function loop(n){const d=Math.min(40,n-last);last=n;const g=games[cur];if(!g){requestAnimationFrame(loop);return}if(!g.wait)g.update(d);
+ const c=cx[cur];c.fillStyle=g.color;c.fillRect(0,0,W(),H());c.fillStyle='#0b0b12cc';c.fillRect(0,0,W(),H());g.draw(c);
+ c.textAlign='center';
+ if(g.wait){c.fillStyle='#0008';c.fillRect(0,0,W(),H());c.fillStyle='#fff';c.font='800 30px sans-serif';c.fillText(g.name,W()/2,H()/2-10);c.font='18px sans-serif';c.fillText('Tap to start',W()/2,H()/2+24)}
+ if(g.over){c.fillStyle='#000a';c.fillRect(0,0,W(),H());c.fillStyle='#fff';c.font='800 32px sans-serif';c.fillText('Game over',W()/2,H()/2-10);c.font='19px sans-serif';c.fillText('Score '+g.score+'  \u00b7  Tap to retry',W()/2,H()/2+28)}
+ c.textAlign='left';
+ if(g.score>(ST.best[g.name]||0)){ST.best[g.name]=g.score;persist()}
+ $('score').textContent=g.score+'  (best '+(ST.best[g.name]||0)+')';requestAnimationFrame(loop)}
+/* ===== online layer: Supabase auth, AI generation, feed, report/block. Talks only to the owner's own Supabase project. ===== */
+const SB='https://vwrskuvebjqzljzjtbhp.supabase.co',KEY='sb_publishable_BZ0Bmo0tAf2RP_sP3Mf00w_bqwjl9sB';
+const NB=games.length;let remote=[],htmlCache={},likedIds=new Set(),prof=null,lastGame=null;
+const el=(t,p={},kids=[])=>{const e=document.createElement(t);Object.assign(e,p);kids.forEach(k=>e.append(k));return e};
+async function refresh(){const s=ST.sess;if(!s)return;if(s.expires_at*1000>Date.now()+60000)return;
+ const r=await fetch(SB+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'content-type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+ if(!r.ok){ST.sess=null;prof=null;persist();throw new Error('Session expired, log in again')}const j=await r.json();ST.sess={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at,uid:j.user.id,email:j.user.email};persist()}
+async function api(path,o={}){const h={apikey:KEY,'content-type':'application/json'};if(o.auth!==false&&ST.sess){await refresh();h.authorization='Bearer '+ST.sess.access_token}
+ Object.assign(h,o.headers||{});const r=await fetch(SB+path,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined});let j=null;const t=await r.text();try{j=t?JSON.parse(t):null}catch{}
+ if(!r.ok)throw Object.assign(new Error((j&&(j.error_description||j.msg||j.message||j.error))||('Error '+r.status)),{status:r.status});return j}
+async function signUp(email,pw,name){const j=await api('/auth/v1/signup',{method:'POST',body:{email,password:pw},auth:false});ST.pendingName=name;persist();return j}
+async function signIn(email,pw){const j=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password:pw},auth:false});
+ ST.sess={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at,uid:j.user.id,email:j.user.email};persist();await loadProfile()}
+async function loadProfile(){if(!ST.sess){prof=null;return}const r=await api('/rest/v1/profiles?id=eq.'+ST.sess.uid+'&select=username,accepted_terms_at,banned');prof=r&&r[0]||null;
+ if(!prof&&ST.pendingName){try{await api('/rest/v1/profiles',{method:'POST',body:{id:ST.sess.uid,username:ST.pendingName},headers:{Prefer:'return=minimal'}});ST.pendingName=null;persist();const r2=await api('/rest/v1/profiles?id=eq.'+ST.sess.uid+'&select=username,accepted_terms_at,banned');prof=r2[0]}catch(e){toast('Username problem: '+e.message)}}
+ const l=await api('/rest/v1/likes?select=game_id');likedIds=new Set(l.map(x=>x.game_id))}
+const ready=()=>!!(ST.sess&&prof&&prof.accepted_terms_at&&!prof.banned);
+async function loadFeed(){try{remote=await api('/rest/v1/games?select=id,title,author,like_count,profiles!games_author_fkey(username)&status=eq.published&order=created_at.desc&limit=30',{auth:!!ST.sess})}catch(e){remote=[]}
+ const n=NB+remote.length;const d=$('dots');d.innerHTML='';for(let k=0;k<n;k++)d.appendChild(el('i'));if(cur>=n)cur=0;go(cur)}
+async function gameHtml(id){if(htmlCache[id])return htmlCache[id];const r=await api('/rest/v1/games?id=eq.'+id+'&select=html',{auth:!!ST.sess});htmlCache[id]=r[0].html;return htmlCache[id]}
+async function showRemote(i){const g=remote[i];const box=$('rbox');box.style.display='block';box.innerHTML='<div style="padding:40px;text-align:center;color:#aaa">Loading...</div>';
+ try{const h=await gameHtml(g.id);if(cur!==NB+i)return;sandbox(h,box)}catch(e){box.textContent='Could not load this game'}}
+const curRemote=()=>cur>=NB?remote[cur-NB]:null;
+function dlg(text,btns){const o=el('div',{style:'position:fixed;inset:0;background:#000b;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px'}),c=el('div',{style:'background:#1c1c1e;border-radius:16px;padding:18px;max-height:80%;overflow:auto;width:100%'});c.append(el('div',{textContent:text,style:'white-space:pre-wrap;font-size:14px;line-height:1.4;margin-bottom:12px'}));
+ btns.forEach(b=>{const x=el('button',{className:'btn',textContent:b[0],style:b[2]||'background:#2c2c2e;color:#fff;margin-right:8px'});x.onclick=()=>{o.remove();b[1]&&b[1]()};c.append(x)});o.append(c);document.body.append(o)}
+/* account / profile panel */
+const TERMS=['Draft terms, to be reviewed before store release.','Games are made by users with AI. Do not create sexual, hateful, violent, illegal or misleading content, or content that uses other people\'s personal data or copyrighted work.','You are responsible for the prompts you write and the games you publish. Published games can be reported by anyone. A game with 3 reports is hidden until it is reviewed. Rule breakers can be banned.','Your prompts are sent to Google Gemini (free tier) to build the game. Google may use free-tier content to improve its products. Prompts and games are stored in this app\'s own database.','AI games can be wrong or broken. Play at your own risk.'];
+async function renderMe(){const b=$('me-body');b.innerHTML='';
+ if(!ST.sess){$('me-h').textContent='Log in';const m=el('input',{className:'field',placeholder:'email',type:'email',autocapitalize:'none'}),p=el('input',{className:'field',placeholder:'password (8+ characters)',type:'password'}),u=el('input',{className:'field',placeholder:'username (sign up only)',maxLength:20,autocapitalize:'none'});
+  const note=el('div',{className:'sub',textContent:'Online account. Sign up sends a confirmation email, confirm it then log in.'});
+  const li=el('button',{className:'btn',textContent:'Log in'}),su=el('button',{className:'btn',textContent:'Sign up',style:'background:#222;color:#fff;margin-left:8px'});
+  li.onclick=async()=>{try{li.disabled=1;await signIn(m.value.trim(),p.value);await afterAuth()}catch(e){note.textContent=e.message;li.disabled=0}};
+  su.onclick=async()=>{const nm=u.value.trim().toLowerCase();if(!/^[a-z0-9_.]{2,20}$/.test(nm)){note.textContent='Username: 2 to 20 letters, numbers, _ or .';return}if(p.value.length<8){note.textContent='Password needs 8+ characters';return}
+   try{await signUp(m.value.trim(),p.value,nm);note.textContent='Check your email and confirm, then log in here.'}catch(e){note.textContent=e.message}};
+  b.append(note,m,p,u,li,su);return}
+ if(!prof){$('me-h').textContent='Account';b.append(el('div',{className:'sub',textContent:'Logged in as '+ST.sess.email+'. Profile not created yet. Log out and sign up with a username.'}),logoutBtn());return}
+ if(!prof.accepted_terms_at){$('me-h').textContent='Terms';TERMS.forEach(t=>b.append(el('p',{className:'sub',textContent:t})));const ok=el('button',{className:'btn',textContent:'I agree'});ok.onclick=async()=>{try{await api('/rest/v1/rpc/accept_terms',{method:'POST',body:{}});await loadProfile();renderMe()}catch(e){toast(e.message)}};b.append(ok,logoutBtn());return}
+ $('me-h').textContent='@'+prof.username;b.append(el('div',{className:'sub',textContent:ST.sess.email}));
+ b.append(el('h3',{textContent:'My games'}));const list=el('div');b.append(list);
+ try{const mine=await api('/rest/v1/games?author=eq.'+ST.sess.uid+'&select=id,title,status,created_at&order=created_at.desc&limit=30');
+  if(!mine.length)list.append(el('div',{className:'empty',textContent:'No games yet. Tap + to make one.'}));
+  mine.forEach(g=>{const row=el('div',{style:'display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #222;font-size:14px'});row.append(el('span',{textContent:g.title,style:'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'}),el('span',{className:'sub',textContent:g.status}));
+   if(g.status==='private'){const pb=el('button',{className:'btn',textContent:'Publish',style:'padding:4px 12px;margin:0'});pb.onclick=async()=>{try{await api('/rest/v1/rpc/publish_game',{method:'POST',body:{gid:g.id}});toast('Published');await loadFeed();renderMe()}catch(e){toast(e.message)}};row.append(pb)}list.append(row)})}catch(e){list.append(el('div',{className:'empty',textContent:e.message}))}
+ b.append(el('h3',{textContent:'Best scores (built-in games)'}));games.forEach(g=>b.append(el('div',{style:'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #222',textContent:g.name+'  '+(ST.best[g.name]||0)})));
+ const tb=el('button',{className:'btn',textContent:'Terms',style:'background:#222;color:#fff;margin-right:8px;margin-top:16px'});tb.onclick=()=>dlg(TERMS.join('\n\n'),[['Close']]);const db=el('button',{className:'btn',textContent:'Delete account',style:'background:#3a1010;color:#ff6b6b;margin-top:16px;margin-left:8px'});db.onclick=()=>dlg('Delete your account, profile and all your games? This cannot be undone.',[['Cancel'],['Delete',deleteAccount,'background:#ff3b5c;color:#fff']]);b.append(tb,logoutBtn(),db)}
+async function deleteAccount(){try{await refresh();const r=await fetch(SB+'/functions/v1/delete-account',{method:'POST',headers:{apikey:KEY,authorization:'Bearer '+ST.sess.access_token}});if(!r.ok)throw new Error('Could not delete, try again');ST.sess=null;prof=null;likedIds=new Set();persist();toast('Account deleted');await loadFeed();renderMe()}catch(e){toast(e.message)}}
+function logoutBtn(){const x=el('button',{className:'btn',textContent:'Log out',style:'background:#222;color:#fff;margin-top:16px'});x.onclick=()=>{ST.sess=null;prof=null;likedIds=new Set();persist();renderMe()};return x}
+async function afterAuth(){await loadFeed();renderMe()}
+/* create panel */
+function create(){const note=$('cr-note'),go_=$('cr-go');
+ if(!ready()){note.textContent=ST.sess?'Accept the terms in the profile tab first.':'Log in first (profile tab) to make games.';go_.textContent='Open profile';go_.disabled=false;go_.style.opacity=1;go_.onclick=()=>show('me');return}
+ note.textContent='Describe a game. AI builds it (10 to 40 seconds). You play it privately first, then decide to publish. 5 tries a day.';go_.textContent='Generate';go_.disabled=false;go_.style.opacity=1;go_.onclick=generate}
+async function generate(){const pr=$('cr-p').value.trim(),note=$('cr-note'),go_=$('cr-go'),box=$('cr-box');if(pr.length<5){toast('Describe it a bit more');return}
+ go_.disabled=true;go_.style.opacity=.4;note.textContent='Building your game...';box.style.display='none';
+ try{await refresh();const r=await fetch(SB+'/functions/v1/generate-game',{method:'POST',headers:{apikey:KEY,authorization:'Bearer '+ST.sess.access_token,'content-type':'application/json'},body:JSON.stringify({prompt:pr})});const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||('Error '+r.status));lastGame=j;box.style.display='block';sandbox(j.html,box);note.textContent='Private preview. Play it, then publish or keep it private.';
+  let act=$('cr-act');if(!act){act=el('div',{id:'cr-act',style:'margin-top:10px;display:flex;gap:8px'});$('p-create').append(act)}act.innerHTML='';
+  const pub=el('button',{className:'btn',textContent:'Publish'});pub.onclick=async()=>{try{pub.disabled=1;await api('/rest/v1/rpc/publish_game',{method:'POST',body:{gid:j.id}});toast('Published');await loadFeed();act.innerHTML='';box.style.display='none';$('cr-p').value='';show('home');go(NB)}catch(e){toast(e.message);pub.disabled=0}};
+  const keep=el('button',{className:'btn',textContent:'Keep private',style:'background:#222;color:#fff'});keep.onclick=()=>{act.innerHTML='';box.style.display='none';toast('Saved in My games')};act.append(pub,keep)}
+ catch(e){note.textContent=e.message}go_.disabled=false;go_.style.opacity=1}
+/* report / block */
+function more(){const g=curRemote();if(!g){toast('Built-in game');return}if(!ready()){toast('Log in to report or block');return}
+ const o=el('div',{style:'position:fixed;inset:0;background:#000a;z-index:30;display:flex;align-items:flex-end'}),s=el('div',{style:'background:#1c1c1e;width:100%;padding:16px;border-radius:16px 16px 0 0;display:flex;flex-direction:column;gap:8px'});o.append(s);
+ const close=()=>o.remove();s.append(el('b',{textContent:'Report or block'}));
+ ['Inappropriate content','Spam or scam','Broken or unsafe','Other'].forEach(r=>{const b=el('button',{className:'btn',textContent:'Report: '+r,style:'background:#2c2c2e;color:#fff'});b.onclick=async()=>{try{await api('/rest/v1/reports',{method:'POST',body:{reporter:ST.sess.uid,game_id:g.id,reported_user:g.author,reason:r},headers:{Prefer:'return=minimal'}});toast('Reported, thanks');close()}catch(e){toast(e.status===409?'Already reported':e.message);close()}};s.append(b)});
+ const bl=el('button',{className:'btn',textContent:'Block this creator',style:'background:#ff3b5c;color:#fff'});bl.onclick=async()=>{try{await api('/rest/v1/blocks',{method:'POST',body:{blocker:ST.sess.uid,blocked:g.author},headers:{Prefer:'return=minimal'}});toast('Blocked');close();await loadFeed()}catch(e){toast(e.message);close()}};
+ const cn=el('button',{className:'btn',textContent:'Cancel',style:'background:none;color:#aaa'});cn.onclick=close;s.append(bl,cn);document.body.append(o)}
+function tileR(g,i){const d=document.createElement('div');d.className='tile';let hh=0;for(const ch of g.id)hh=(hh*31+ch.charCodeAt(0))%360;d.style.background=`linear-gradient(135deg,hsl(${hh},80%,60%),hsl(${(hh+60)%360},80%,45%))`;d.textContent=g.title;d.onclick=()=>{show('home');go(i)};return d}
+size();go(0);requestAnimationFrame(loop);(async()=>{try{if(ST.sess)await loadProfile()}catch(e){}await loadFeed()})();
+
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
+</script></body></html>

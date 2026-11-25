@@ -166,11 +166,11 @@ async function refresh(){const s=ST.sess;if(!s)return;if(s.expires_at*1000>Date.
 async function api(path,o={}){const h={apikey:KEY,'content-type':'application/json'};if(o.auth!==false&&ST.sess){await refresh();h.authorization='Bearer '+ST.sess.access_token}
  Object.assign(h,o.headers||{});const r=await fetch(SB+path,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined});let j=null;const t=await r.text();try{j=t?JSON.parse(t):null}catch{}
  if(!r.ok)throw Object.assign(new Error((j&&(j.error_description||j.msg||j.message||j.error))||('Error '+r.status)),{status:r.status});return j}
-async function signUp(email,pw,name){const j=await api('/auth/v1/signup?redirect_to='+encodeURIComponent('https://swipeplay-abdo.github.io/swipeplay/'),{method:'POST',body:{email,password:pw},auth:false});ST.pendingName=name;persist();return j}
+async function signUp(email,pw,name){const j=await api('/auth/v1/signup?redirect_to='+encodeURIComponent('https://swipeplay-abdo.github.io/swipeplay/'),{method:'POST',body:{email,password:pw,data:{username:name}},auth:false});ST.pendingName=name;persist();return j}
 async function signIn(email,pw){const j=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password:pw},auth:false});
  ST.sess={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at,uid:j.user.id,email:j.user.email};persist();await loadProfile()}
 async function loadProfile(){if(!ST.sess){prof=null;return}const r=await api('/rest/v1/profiles?id=eq.'+ST.sess.uid+'&select=username,accepted_terms_at,banned');prof=r&&r[0]||null;
- if(!prof&&ST.pendingName){try{await api('/rest/v1/profiles',{method:'POST',body:{id:ST.sess.uid,username:ST.pendingName},headers:{Prefer:'return=minimal'}});ST.pendingName=null;persist();const r2=await api('/rest/v1/profiles?id=eq.'+ST.sess.uid+'&select=username,accepted_terms_at,banned');prof=r2[0]}catch(e){toast('Username problem: '+e.message)}}
+ let pn=ST.pendingName;if(!prof&&!pn){try{const uu=await api('/auth/v1/user');const m=uu&&uu.user_metadata&&uu.user_metadata.username;if(typeof m==='string'&&/^[a-z0-9_.]{2,20}$/.test(m))pn=m}catch(e){}}if(!prof&&pn){try{await api('/rest/v1/profiles',{method:'POST',body:{id:ST.sess.uid,username:pn},headers:{Prefer:'return=minimal'}});ST.pendingName=null;persist();const r2=await api('/rest/v1/profiles?id=eq.'+ST.sess.uid+'&select=username,accepted_terms_at,banned');prof=r2[0]}catch(e){toast('Username problem: '+e.message)}}
  const l=await api('/rest/v1/likes?select=game_id');likedIds=new Set(l.map(x=>x.game_id))}
 const ready=()=>!!(ST.sess&&prof&&prof.accepted_terms_at&&!prof.banned);
 async function loadFeed(){try{remote=await api('/rest/v1/games?select=id,title,author,like_count,profiles!games_author_fkey(username)&status=eq.published&order=created_at.desc&limit=30',{auth:!!ST.sess})}catch(e){remote=[]}
@@ -185,12 +185,12 @@ function dlg(text,btns){const o=el('div',{style:'position:fixed;inset:0;backgrou
 const TERMS=['Draft terms, to be reviewed before store release.','Games are made by users with AI. Do not create sexual, hateful, violent, illegal or misleading content, or content that uses other people\'s personal data or copyrighted work.','You are responsible for the prompts you write and the games you publish. Published games can be reported by anyone. A game with 3 reports is hidden until it is reviewed. Rule breakers can be banned.','Your prompts are sent to Google Gemini (free tier) to build the game. Google may use free-tier content to improve its products. Prompts and games are stored in this app\'s own database.','AI games can be wrong or broken. Play at your own risk.'];
 async function renderMe(){const b=$('me-body');b.innerHTML='';
  if(!ST.sess){$('me-h').textContent='Log in';const m=el('input',{className:'field',placeholder:'email',type:'email',autocapitalize:'none'}),p=el('input',{className:'field',placeholder:'password (8+ characters)',type:'password'}),u=el('input',{className:'field',placeholder:'username (sign up only)',maxLength:20,autocapitalize:'none'});
-  const note=el('div',{className:'sub',textContent:'Online account. Sign up sends a confirmation email, confirm it then log in.'});
+  const note=el('div',{className:'sub',textContent:AUTHNOTE||'Online account. Sign up sends a confirmation email, confirm it then log in.'});
   const li=el('button',{className:'btn',textContent:'Log in'}),su=el('button',{className:'btn',textContent:'Sign up',style:'background:#222;color:#fff;margin-left:8px'});
   li.onclick=async()=>{try{li.disabled=1;await signIn(m.value.trim(),p.value);await afterAuth()}catch(e){note.textContent=e.message;li.disabled=0}};
   su.onclick=async()=>{const nm=u.value.trim().toLowerCase();if(!/^[a-z0-9_.]{2,20}$/.test(nm)){note.textContent='Username: 2 to 20 letters, numbers, _ or .';return}if(p.value.length<8){note.textContent='Password needs 8+ characters';return}
    try{await signUp(m.value.trim(),p.value,nm);note.textContent='Check your email and confirm, then log in here.'}catch(e){note.textContent=e.message}};
-  b.append(note,m,p,u,li,su);return}
+  b.append(note,m,p,u,li,su);if(AUTHERR){const rs=el('button',{className:'btn',textContent:'Send confirmation email again',style:'background:none;color:#aaa;margin-top:10px'});rs.onclick=async()=>{const em=m.value.trim();if(!em){note.textContent='Type your email first, then tap again.';return}try{rs.disabled=1;await api('/auth/v1/resend?redirect_to='+encodeURIComponent('https://swipeplay-abdo.github.io/swipeplay/'),{method:'POST',body:{type:'signup',email:em},auth:false});note.textContent='If that account is waiting for confirmation, a new email was sent. Open it within one hour.'}catch(e){note.textContent=e.message;rs.disabled=0}};b.append(rs)}return}
  if(!prof){$('me-h').textContent='Account';b.append(el('div',{className:'sub',textContent:'Logged in as '+ST.sess.email+'. Profile not created yet. Log out and sign up with a username.'}),logoutBtn());return}
  if(!prof.accepted_terms_at){$('me-h').textContent='Terms';TERMS.forEach(t=>b.append(el('p',{className:'sub',textContent:t})));const ok=el('button',{className:'btn',textContent:'I agree'});ok.onclick=async()=>{try{await api('/rest/v1/rpc/accept_terms',{method:'POST',body:{}});await loadProfile();renderMe()}catch(e){toast(e.message)}};b.append(ok,logoutBtn());return}
  $('me-h').textContent='@'+prof.username;b.append(el('div',{className:'sub',textContent:ST.sess.email}));
@@ -224,7 +224,15 @@ function more(){const g=curRemote();if(!g){toast('Built-in game');return}if(!rea
  const bl=el('button',{className:'btn',textContent:'Block this creator',style:'background:#ff3b5c;color:#fff'});bl.onclick=async()=>{try{await api('/rest/v1/blocks',{method:'POST',body:{blocker:ST.sess.uid,blocked:g.author},headers:{Prefer:'return=minimal'}});toast('Blocked');close();await loadFeed()}catch(e){toast(e.message);close()}};
  const cn=el('button',{className:'btn',textContent:'Cancel',style:'background:none;color:#aaa'});cn.onclick=close;s.append(bl,cn);document.body.append(o)}
 function tileR(g,i){const d=document.createElement('div');d.className='tile';let hh=0;for(const ch of g.id)hh=(hh*31+ch.charCodeAt(0))%360;d.style.background=`linear-gradient(135deg,hsl(${hh},80%,60%),hsl(${(hh+60)%360},80%,45%))`;d.textContent=g.title;d.onclick=()=>{show('home');go(i)};return d}
-size();go(0);requestAnimationFrame(loop);(async()=>{try{if(ST.sess)await loadProfile()}catch(e){}await loadFeed()})();
+let AUTHNOTE=null,AUTHERR=false;
+function handleAuthHash(){const h=location.hash.slice(1);if(!h||!/(access_token|error)=/.test(h))return false;const q=new URLSearchParams(h);let did=false;
+ try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+ if(q.get('error')||q.get('error_code')){AUTHERR=true;AUTHNOTE=(q.get('error_code')==='otp_expired')?'That confirmation link expired or was already used. If you already confirmed, log in. Otherwise send a new email.':'That confirmation link did not work. Log in if you already confirmed, or send a new email.';return true}
+ const at=q.get('access_token'),rt=q.get('refresh_token'),ty=q.get('type');
+ if(at&&rt&&ty==='signup'){try{const pl=JSON.parse(atob(at.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));const ex=parseInt(q.get('expires_at')||'0',10)||Math.floor(Date.now()/1000)+(parseInt(q.get('expires_in')||'3600',10));if(pl.sub&&pl.email){ST.sess={access_token:at,refresh_token:rt,expires_at:ex,uid:pl.sub,email:pl.email};persist();did=true}}catch(e){}}
+ return did}
+let AUTHOK=false;try{AUTHOK=handleAuthHash()&&!!ST.sess}catch(e){}
+size();go(0);requestAnimationFrame(loop);(async()=>{try{if(ST.sess)await loadProfile()}catch(e){}await loadFeed();if(AUTHOK){toast('Email confirmed. You are logged in.');show('me')}else if(AUTHNOTE)show('me')})();
 
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
 </script></body></html>
